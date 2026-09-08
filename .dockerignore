@@ -1,0 +1,15 @@
+# Only send the files needed to build and serve the application.
+**
+!package.json
+!package-lock.json
+!angular.json
+!tsconfig.json
+!tsconfig.app.json
+!src/
+!src/**
+!nginx/
+!nginx/nginx.conf
+
+# Test files are not needed for the production build.
+src/**/*.spec.ts
+src/test.ts

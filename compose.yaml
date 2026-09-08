@@ -1,0 +1,6 @@
+services:
+  front:
+    build: .
+    image: projet6-front:local
+    ports:
+      - "8081:80"
