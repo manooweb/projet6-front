@@ -39,7 +39,7 @@ To run tests locally, use the following command:
 npm test
 ```
 
-For CI, `./run-tests.sh` cleans `test-results/`, runs `npm test`, and generates JUnit XML reports in that directory.
+For CI, `./run-tests.sh` automatically detects the project type, cleans `test-results/`, runs `npm test`, and generates JUnit XML reports in that directory.
 
 ### Run with Docker
 

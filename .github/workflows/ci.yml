@@ -24,18 +24,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
-      - name: Detect project type
+      - name: Detect project type with test runner
         id: project
         shell: bash
         run: |
-          if [[ -f gradlew ]]; then
-            echo 'type=gradle' >> "$GITHUB_OUTPUT"
-          elif [[ -f package-lock.json ]]; then
-            echo 'type=node' >> "$GITHUB_OUTPUT"
-          else
-            echo 'Unsupported project: neither gradlew nor package-lock.json was found.' >&2
-            exit 1
-          fi
+          project_type="$(./run-tests.sh --detect)"
+          echo "type=$project_type" >> "$GITHUB_OUTPUT"
 
       - name: Set up Java
         if: steps.project.outputs.type == 'gradle'
