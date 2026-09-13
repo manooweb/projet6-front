@@ -6,13 +6,12 @@ The **Olympic Participation Tracker** is an application designed to record and a
 
 ## Technical Context
 
-The application is built using **Angular 14.1** and relies on **npm** for package management. Angular offers a powerful framework for creating dynamic web applications, and npm simplifies the process of managing dependencies and scripts.
+The application is built using **Angular 20** and relies on **npm** for package management. Angular offers a powerful framework for creating dynamic web applications, and npm simplifies the process of managing dependencies and scripts.
 
 Summary:
 
-- **NodeJS**: Tested with version 20.11.0
-- **NPM**: Tested with version 10.2.4
-- **NGINX**: Tested with version 1.27
+- **Node.js**: version 22 for the Docker build and version 24 in CI
+- **NGINX**: used to serve the production build
 
 ## Getting Started
 
@@ -34,55 +33,38 @@ Run `npm run build` to build the project. The build artifacts will be stored in 
 
 ### Test
 
-To run tests and ensure the application's functionality, use the following command:
+To run tests locally, use the following command:
 
 ```bash
 npm test
 ```
 
-Our test suite covers critical components, ensuring stability and reliability.
+For CI, `./run-tests.sh` cleans `test-results/`, runs `npm test`, and generates JUnit XML reports in that directory.
 
-### Packaging
+### Run with Docker
 
-To package the application for distribution, run:
+The Docker image builds the Angular application and serves it with NGINX. Start it locally with:
 
 ```bash
-npm pack
+docker compose up --build -d
 ```
 
-This will create a distributable package containing the compiled code and necessary assets.
+The application is available at `http://localhost:8081/`. Stop the local stack with `docker compose down`.
 
-### Deploy on nginx
+## Continuous Integration and Releases
 
-To deploy application on nginx web server with docker you can use nginx config located in the `nginx` folder. This one configure the root application folder in the `/app` folder.
+GitHub Actions runs tests for pull requests targeting `main` and for pushes to `main`. JUnit reports are available as workflow artifacts and are published in GitHub checks.
 
-After building the app copy the `dist/olympic-games-starter` folder to the root application folder in the docker image.
+Each push builds and publishes a Docker image to GitHub Container Registry:
 
-### Publishing to GitLab Registry
+```text
+ghcr.io/manooweb/projet6-front:<branch>-<commit-sha>
+```
 
-To publish the application to a GitLab registry, follow these steps:
+On `main`, semantic-release creates GitHub releases, Git tags without a `v` prefix, and updates `CHANGELOG.md` and `package.json` when a release-worthy Conventional Commit is pushed. The corresponding Docker image is also tagged with the semantic version, for example:
 
-1. **Change Application Scope**:
-   - Change the application scope for your new gitlab group. For example, if your repository url is `https://gitlab.com/your-gitlab-group-slug/olympic-games-starter` change the application name to `@your-gitlab-group-slug/olympic-games-starter`
-   ```json
-   {
-      "name": "@your-gitlab-group-slug/olympic-games-starter",
-      ...
-   }
-   ```
-2. To publish, you need to create a file named `.npmrc` with the following content :
+```text
+ghcr.io/manooweb/projet6-front:1.0.1
+```
 
-   ```ini
-   @your-gitlab-group-slug:registry=https://gitlab.com/api/v4/projects/${GITLAB_PROJECT_ID}/packages/npm/
-   //gitlab.com/api/v4/projects/${GITLAB_PROJECT_ID}/packages/npm/:_authToken="${GITLAB_TOKEN}"
-   ```
-
-3. **Set Environment Variables**:
-   - Ensure that the following environment variables are specified:
-     - `GITLAB_PROJECT_ID`: The ID of your GitLab project.
-     - `GITLAB_TOKEN`: Your GitLab deploy token.
-4. **Execute the Publish Command**:
-   ```bash
-   npm publish
-   ```
-   This will publish the package to your GitLab registry.
+Commits of type `ci:` run the workflow but do not create a release.

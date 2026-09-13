@@ -2,7 +2,7 @@ name: Continuous integration
 
 on:
   push:
-    branches: [main, add-ci-workflow]
+    branches: [main]
   pull_request:
     branches: [main]
 
