@@ -1,0 +1,102 @@
+name: Continuous integration
+
+on:
+  push:
+    branches: [main, add-ci-workflow]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '24'
+
+jobs:
+  test:
+    name: Test application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Detect project type
+        id: project
+        shell: bash
+        run: |
+          if [[ -f gradlew ]]; then
+            echo 'type=gradle' >> "$GITHUB_OUTPUT"
+          elif [[ -f package-lock.json ]]; then
+            echo 'type=node' >> "$GITHUB_OUTPUT"
+          else
+            echo 'Unsupported project: neither gradlew nor package-lock.json was found.' >&2
+            exit 1
+          fi
+
+      - name: Set up Java
+        if: steps.project.outputs.type == 'gradle'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Set up Node.js
+        if: steps.project.outputs.type == 'node'
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install Node.js dependencies
+        if: steps.project.outputs.type == 'node'
+        run: npm ci
+
+      - name: Run tests
+        run: ./run-tests.sh
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-results
+          path: test-results/
+          if-no-files-found: warn
+
+  publish-test-report:
+    name: Publish test report
+    needs: test
+    if: >-
+      ${{
+        always() &&
+        (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      }}
+    permissions:
+      contents: read
+      checks: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out trusted reference
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Download test reports
+        continue-on-error: true
+        uses: actions/download-artifact@v7
+        with:
+          name: test-results
+          path: test-results
+
+      - name: Publish test report
+        if: hashFiles('test-results/*.xml') != ''
+        uses: dorny/test-reporter@v3
+        with:
+          name: Test results
+          path: test-results/*.xml
+          reporter: java-junit
