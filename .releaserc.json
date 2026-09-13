@@ -5,13 +5,7 @@
     [
       "@semantic-release/commit-analyzer",
       {
-        "preset": "conventionalcommits",
-        "releaseRules": [
-          {
-            "type": "ci",
-            "release": "patch"
-          }
-        ]
+        "preset": "conventionalcommits"
       }
     ],
     [
@@ -35,10 +29,6 @@
             {
               "type": "revert",
               "section": "Reverts"
-            },
-            {
-              "type": "ci",
-              "section": "Continuous Integration"
             },
             {
               "type": "build",
